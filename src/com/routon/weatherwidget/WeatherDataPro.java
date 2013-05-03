@@ -31,6 +31,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -140,6 +141,8 @@ public class WeatherDataPro {
 
 		int res_id = 0;
 		int id2 = -1;
+		String icon1_path = null;
+		String icon2_path = null;
 
 		try {
 			if (w_detail.getIcon1() >= 0 && w_detail.getIcon1() < 33)
@@ -160,7 +163,15 @@ public class WeatherDataPro {
 				animDrawable = null;
 				System.out.println("**********animDrawable.stop***********");
 			}
-
+			
+/*			if (w_detail.getIcon1() >= 0 && w_detail.getIcon1() < 33)
+				icon1_path = "/hdisk/rc/pics/weather/"+icon_name[w_detail.getIcon1()]+".png";
+			else
+				icon1_path = "/hdisk/rc/pics/weather/"+icon_name[0]+".png";
+			
+			if (w_detail.getIcon2() >= 0 && w_detail.getIcon2() < 33)
+				icon2_path = "/hdisk/rc/pics/weather/"+icon_name[w_detail.getIcon2()]+".png";
+*/
 			int i = 0;
 			while (bitmapList.size() > 0) {
 				if (bitmapList.get(0) != null
@@ -174,8 +185,9 @@ public class WeatherDataPro {
 				bitmapList.remove(0);
 			}
 
-			Log.v("LOG", "============ res_id =" + res_id + " , id2 = " + id2);
+			Log.v("LOG", "============ icon1_path =" + icon1_path + " , icon2_path = " + icon2_path);
 			animDrawable = getAnimationDrawable(res_id, id2, 9, 3, 2700);
+//			animDrawable = getAnimationDrawable(icon1_path, icon2_path, 10, 10, 3000);
 			weather_icon.setImageDrawable(animDrawable);
 			if (animDrawable.isVisible() == false)
 				animDrawable.setVisible(true, true);
@@ -523,6 +535,69 @@ public class WeatherDataPro {
 
 			if (id2 > 0) {
 				bitmapSrc = BitmapFactory.decodeResource(res, id2);
+				for (int frame = 0; frame < frameNum; frame++) {
+					lay = frame / columnNum;
+					bitmapList.add(Bitmap.createBitmap(bitmapSrc,
+							(frame % columnNum) * width, lay * height, width,
+							height));
+					animationDrawable.addFrame(
+							new BitmapDrawable(
+									bitmapList.get(bitmapList.size() - 1)),
+							time / frameNum);
+				}
+				bitmapList.add(bitmapSrc);
+				bitmapSrc = null;
+			}
+
+			animationDrawable.setOneShot(false);
+		}
+		return animationDrawable;
+	}
+	
+	public AnimationDrawable getAnimationDrawable(String icon1_path, String icon2_path,
+			int frameNum, int columnNum, int time) {
+		AnimationDrawable animationDrawable = null;
+		int width, height;
+		Bitmap bitmapSrc = null;
+
+		try {
+			// bitmapSrc = BitmapFactory.decodeStream(new FileInputStream(new
+			// File(fileName)));
+
+			bitmapSrc = BitmapFactory.decodeFile(icon1_path);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		if (bitmapSrc != null) {
+			System.out.println("width:" + bitmapSrc.getWidth());
+			System.out.println("height:" + bitmapSrc.getHeight());
+			width = bitmapSrc.getWidth() / 10;
+			height = bitmapSrc.getHeight();
+
+			animationDrawable = new AnimationDrawable();
+
+			// Bitmap bitmap = Bitmap.createBitmap(bitmapSrc,0, 0,
+			// bitmapSrc.getWidth(), bitmapSrc.getHeight());
+			// animationDrawable.addFrame(new BitmapDrawable(bitmap),time /
+			// frameNum);
+			int lay = 0;
+			for (int frame = 0; frame < frameNum; frame++) {
+				lay = frame / columnNum;
+				bitmapList.add(Bitmap.createBitmap(bitmapSrc,
+						(frame % columnNum) * width, lay * height, width,
+						height));
+				animationDrawable.addFrame(
+						new BitmapDrawable(
+								bitmapList.get(bitmapList.size() - 1)), time
+								/ frameNum);
+			}
+			bitmapList.add(bitmapSrc);
+			bitmapSrc = null;
+
+			if (icon2_path != null) {
+				bitmapSrc = BitmapFactory.decodeFile(icon2_path);
 				for (int frame = 0; frame < frameNum; frame++) {
 					lay = frame / columnNum;
 					bitmapList.add(Bitmap.createBitmap(bitmapSrc,

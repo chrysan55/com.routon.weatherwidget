@@ -120,22 +120,22 @@ public class PictureLayout extends FrameLayout {
                 case 3:
                 case 4:
                 case 5:
-                    res_id = (Integer) R.drawable.class.getField("spring_png").getInt(0);
+                    res_id = (Integer) R.drawable.class.getField("spring_jpeg").getInt(0);
                     break;
                 case 6:
                 case 7:
                 case 8:
-                    res_id = (Integer) R.drawable.class.getField("summer_png").getInt(0);
+                    res_id = (Integer) R.drawable.class.getField("summer_jpeg").getInt(0);
                     break;
                 case 9:
                 case 10:
                 case 11:
-                    res_id = (Integer) R.drawable.class.getField("autumn_png").getInt(0);
+                    res_id = (Integer) R.drawable.class.getField("autumn_jpeg").getInt(0);
                     break;
                 case 12:
                 case 1:
                 case 2:
-                    res_id = (Integer) R.drawable.class.getField("winter_png").getInt(0);
+                    res_id = (Integer) R.drawable.class.getField("winter_jpeg").getInt(0);
                     break;
                 default:
                     res_id = (Integer) R.drawable.class.getField("widget_bkgrd").getInt(0);

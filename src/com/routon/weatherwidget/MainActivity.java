@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
 	receiver sys_receiver;
 	ImageView panel_pic;
 	private String tempCity = null;
+	private boolean openAnimation = true;
 
 	private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
@@ -109,8 +110,7 @@ public class MainActivity extends Activity {
 
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.activity_main);
 
 		// 接收系统关机广播，若此时处在输入法界面则返回主界面
@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
 		Bundle bundle = this.getIntent().getExtras();
 		// Bundle bundle = new Bundle();
 		// bundle.putString("city", "北  京");
-		if (bundle != null)
+		if (bundle != null) {
 			if (bundle.containsKey("city")) {
 				tempCity = bundle.getString("city");
 				if (tempCity.length() == 2 || tempCity.length() == 3) {
@@ -141,11 +141,22 @@ public class MainActivity extends Activity {
 					Log.i("tag", "Bundle: tempCity = " + tempCity);
 				}
 			}
+			if (bundle.containsKey("cmd_args"))
+				if (bundle.getString("cmd_args").equals("NoAnimation"))
+					openAnimation = false;
+		}
 
-		weather_main = (PictureLayout) findViewById(R.id.weathermain);
 		cities_panel = (FrameLayout) findViewById(R.id.cities_panel);
-		animation_completed = false;
-		weather_main.startTransition(false);
+		if (openAnimation == true) {
+			weather_main = (PictureLayout) findViewById(R.id.weathermain);
+			animation_completed = false;
+			weather_main.startTransition(false);
+		} else {
+			weather_main_init();
+			weather_add_city_button();
+			weather_panel_animation(true);
+			weather_parse_city_xml();
+		}
 		// weather_main_init();
 		// weather_add_city_button();
 
@@ -215,8 +226,7 @@ public class MainActivity extends Activity {
 					index = null;
 					index = new String("FavoriteCityName[" + cityNo + "]");
 					reader.SetValue("Weather", index, c_data.c_name);
-					System.out.printf("write 城市：%s， %s, %d\n",
-							city_list.get(i).c_name, city_list.get(i).c_id, i);
+					System.out.printf("write 城市：%s， %s, %d\n", city_list.get(i).c_name, city_list.get(i).c_id, i);
 					cityNo++;
 				}
 				if (cityNo == 5)
@@ -262,43 +272,41 @@ public class MainActivity extends Activity {
 			@Override
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
-				case 1:
-					if (tempCity != null)
-						if (!weather_city_exist(tempCity)) {
-							CityInfo c_info = null;
-							CityData c_data = null;
-							for (int i = 0; i < name_list.size(); i++) {
-								c_info = null;
-								c_info = name_list.get(i);
-								if (c_info.name.equals(tempCity)) {
-									c_data = new CityData();
-									c_data.c_id = c_info.c_id;
-									c_data.c_name = c_info.name;
-									c_data.is_temporary = true;
-									city_list.add(c_data);
-									break;
+					case 1:
+						if (tempCity != null)
+							if (!weather_city_exist(tempCity)) {
+								CityInfo c_info = null;
+								CityData c_data = null;
+								for (int i = 0; i < name_list.size(); i++) {
+									c_info = null;
+									c_info = name_list.get(i);
+									if (c_info.name.equals(tempCity)) {
+										c_data = new CityData();
+										c_data.c_id = c_info.c_id;
+										c_data.c_name = c_info.name;
+										c_data.is_temporary = true;
+										city_list.add(c_data);
+										break;
+									}
+								}
+								if (c_data == null) {
+									Toast toast = Toast.makeText(getApplicationContext(), "找不到该城市", Toast.LENGTH_LONG);
+									toast.setGravity(Gravity.CENTER, 0, 0);
+									toast.show();
+									Log.i("tag", "handler : toast!!!!!!!!!!");
+								} else {
+									weather_add_city_button();
+									View btn = city_list.get(city_list.size() - 1).button_view;
+									btn.setY(button_start_y);
+									focus_index = city_list.size() - 1;
+									btn.requestFocus();
 								}
 							}
-							if (c_data == null) {
-								Toast toast = Toast.makeText(
-										getApplicationContext(), "找不到该城市",
-										Toast.LENGTH_LONG);
-								toast.setGravity(Gravity.CENTER, 0, 0);
-								toast.show();
-								Log.i("tag", "handler : toast!!!!!!!!!!");
-							} else {
-								weather_add_city_button();
-								View btn = city_list.get(city_list.size() - 1).button_view;
-								btn.setY(button_start_y);
-								focus_index = city_list.size() - 1;
-								btn.requestFocus();
-							}
-						}
 
-					break;
+						break;
 
-				default:
-					break;
+					default:
+						break;
 				}
 			}
 		};
@@ -343,8 +351,7 @@ public class MainActivity extends Activity {
 
 	void weather_parse_city_xml() {
 		name_list = new ArrayList<CityInfo>();
-		Runnable run = new ParseThread(name_list, city_list, weather_data,
-				handler);
+		Runnable run = new ParseThread(name_list, city_list, weather_data, handler);
 		Thread th = new Thread(run);
 		th.start();
 	}
@@ -419,14 +426,12 @@ public class MainActivity extends Activity {
 			if (c_name != null)
 				if (c_name.length() == 3) {
 					StringBuilder sb = new StringBuilder();
-					sb.append(c_name.charAt(0)).append("  ")
-							.append(c_name.charAt(2));
+					sb.append(c_name.charAt(0)).append("  ").append(c_name.charAt(2));
 					c_name = sb.toString();
 					cityListChanged = true;
+				} else {
+					cityListChanged = true;
 				}
-			else {
-				cityListChanged = true;
-			}
 
 			if (i == 0) {
 				if (c_id == null || c_name == null) {
@@ -434,8 +439,7 @@ public class MainActivity extends Activity {
 					c_name = new String("武  汉");
 					cityListChanged = true;
 				} else {
-					if ((c_id != null && c_id.length() < 1)
-							|| (c_name != null && c_name.length() < 1)) {
+					if ((c_id != null && c_id.length() < 1) || (c_name != null && c_name.length() < 1)) {
 						c_id = new String("420100");
 						c_name = new String("武  汉");
 						cityListChanged = true;
@@ -448,19 +452,16 @@ public class MainActivity extends Activity {
 				c_data.is_default = true;
 				city_list.add(c_data);
 
-				System.out.println("城市名：　" + c_data.c_name + ";  城市Id："
-						+ c_data.c_id);
+				System.out.println("城市名：　" + c_data.c_name + ";  城市Id：" + c_data.c_id);
 			} else {
-				if ((c_id != null && c_id.length() > 1)
-						&& (c_name != null && c_name.length() > 1)) {
+				if ((c_id != null && c_id.length() > 1) && (c_name != null && c_name.length() > 1)) {
 					c_data = new CityData();
 					c_data.c_id = c_id;
 					c_data.c_name = c_name;
 					c_data.is_default = false;
 					city_list.add(c_data);
 
-					System.out.println("城市名：　" + c_data.c_name + ";  城市Id："
-							+ c_data.c_id);
+					System.out.println("城市名：　" + c_data.c_name + ";  城市Id：" + c_data.c_id);
 				}
 			}
 
@@ -469,8 +470,7 @@ public class MainActivity extends Activity {
 		for (int i = 0; i < city_list.size(); i++) {
 			c_data = city_list.get(i);
 			if (tempCity != null && c_data != null)
-				if (tempCity.replaceAll(" ", "").equals(
-						c_data.c_name.replaceAll(" ", ""))) {
+				if (tempCity.replaceAll(" ", "").equals(c_data.c_name.replaceAll(" ", ""))) {
 					focus_index = i;
 					tempCity = null;
 				}
@@ -482,15 +482,12 @@ public class MainActivity extends Activity {
 	void weather_add_city_board(CityData c_data, int index) {
 		float start_y = 100.0f;
 		float city_board_gap = 1280.0f;
-		View board_view = LayoutInflater.from(this.getApplication()).inflate(
-				R.layout.city_widget, null);
+		View board_view = LayoutInflater.from(this.getApplication()).inflate(R.layout.city_widget, null);
 		weather_main.addView(board_view);
 		c_data.board_view = board_view;
 
-		FrameLayout city_board = (FrameLayout) board_view
-				.findViewById(R.id.cityboard);
-		city_board.setX(board_start_x + (index - focus_index + 1)
-				* city_board_gap);
+		FrameLayout city_board = (FrameLayout) board_view.findViewById(R.id.cityboard);
+		city_board.setX(board_start_x + (index - focus_index + 1) * city_board_gap);
 		city_board.setY(start_y);
 
 		// ImageView def_pic =
@@ -498,8 +495,7 @@ public class MainActivity extends Activity {
 		// def_pic.setImageURI(Uri.fromFile(new File(pre_path
 		// +"/rc/pics/weather/widget/default.png")));
 
-		Log.i("add_city_board", c_data.c_name + ":" + city_board.getX() + " "
-				+ city_board.getY());
+		Log.i("add_city_board", c_data.c_name + ":" + city_board.getX() + " " + city_board.getY());
 	}
 
 	void weather_add_city_button() {
@@ -517,22 +513,18 @@ public class MainActivity extends Activity {
 			if (c_data.button_view == null) {
 				updateList.add(c_data);
 
-				final View button_view = LayoutInflater.from(
-						this.getApplication()).inflate(R.layout.city_button,
-						null);
+				final View button_view = LayoutInflater.from(this.getApplication()).inflate(R.layout.city_button, null);
 				cities_panel.addView(button_view);
 				c_data.button_view = button_view;
 
-				RelativeLayout button = (RelativeLayout) button_view
-						.findViewById(R.id.city_button);
+				RelativeLayout button = (RelativeLayout) button_view.findViewById(R.id.city_button);
 				button.setX(button_start_x + i * button_gap);
 				button.setY(-150);// 开始时隐藏状态
 
 				button_view.setFocusable(true);
 				button_view.setFocusableInTouchMode(true);
 
-				TextView city_name = (TextView) button_view
-						.findViewById(R.id.cityname);
+				TextView city_name = (TextView) button_view.findViewById(R.id.cityname);
 
 				int len = c_data.c_name.length();
 				System.out.println("***********add new city, cnt:" + len);
@@ -547,8 +539,7 @@ public class MainActivity extends Activity {
 				city_name.setText(c_data.c_name);
 				// city_name.setScaleX(0.8f);
 
-				ImageView btn = (ImageView) button_view
-						.findViewById(R.id.buttonpic);
+				ImageView btn = (ImageView) button_view.findViewById(R.id.buttonpic);
 				// btn.setImageURI(Uri.fromFile(new File(pre_path
 				// +"/rc/pics/weather/widget/btn_white.png")));
 				btn.setImageResource(R.drawable.btn_white);
@@ -582,111 +573,102 @@ public class MainActivity extends Activity {
 						int i = 0;
 						CityData c_data = null;
 						if (event.getAction() == KeyEvent.ACTION_DOWN) {
-							System.out.println("key value is: " + keyCode
-									+ " , animation_completed = "
-									+ animation_completed);
+							System.out.println("key value is: " + keyCode + " , animation_completed = " + animation_completed);
 							switch (keyCode) {
-							case KeyEvent.KEYCODE_DPAD_LEFT: // left
-							case KeyEvent.KEYCODE_DPAD_UP:
-								if ((focus_index > 0)
-										&& (animation_completed == true)) {
-									animation_completed = false;
-									// Log.v("left key:", "focus_index = "+
-									// focus_index);
-									focus_index--;
-									c_data = city_list.get(focus_index);
-									c_data.button_view.requestFocus();
-									// weather_move_all_city_board(); // move
-									// all
-									// city
-									// board
-									// left
+								case KeyEvent.KEYCODE_DPAD_LEFT: // left
+								case KeyEvent.KEYCODE_DPAD_UP:
+									if ((focus_index > 0) && (animation_completed == true)) {
+										animation_completed = false;
+										// Log.v("left key:", "focus_index = "+
+										// focus_index);
+										focus_index--;
+										c_data = city_list.get(focus_index);
+										c_data.button_view.requestFocus();
+										// weather_move_all_city_board(); // move
+										// all
+										// city
+										// board
+										// left
 
-									// 影响按键响应速度
-									// weather_data.weather_update_animationdrawable_bitmap(city_list.get(focus_index));
+										// 影响按键响应速度
+										// weather_data.weather_update_animationdrawable_bitmap(city_list.get(focus_index));
 
-									// updateCD =
-									// city_list.get(focus_index);
-									// new Thread(){
-									// public void run(){
-									// handler.post(runUpdateBitmap);
-									// }
-									// }.start();
+										// updateCD =
+										// city_list.get(focus_index);
+										// new Thread(){
+										// public void run(){
+										// handler.post(runUpdateBitmap);
+										// }
+										// }.start();
 
-								}
-								return true;
-							case KeyEvent.KEYCODE_DPAD_RIGHT: // right
-							case KeyEvent.KEYCODE_DPAD_DOWN:
-								if (focus_index == city_list.size())
+									}
 									return true;
+								case KeyEvent.KEYCODE_DPAD_RIGHT: // right
+								case KeyEvent.KEYCODE_DPAD_DOWN:
+									if (focus_index == city_list.size())
+										return true;
 
-								if ((focus_index < city_list.size() - 1)
-										&& (animation_completed == true)) // move
-																			// focus
-																			// to
-																			// city_button
-								{
-									animation_completed = false;
-									focus_index++;
-									c_data = city_list.get(focus_index);
-									c_data.button_view.requestFocus();
-
-								} else // move focus on add button
-								{
-									if ((name_list.size() > 200)
-											&& (animation_completed == true)) // city.xml
-																				// 还没解析完成不能添加城市
+									if ((focus_index < city_list.size() - 1) && (animation_completed == true)) // move
+																												// focus
+																												// to
+																												// city_button
 									{
-										System.out
-												.printf("************right*********************\n");
-										ImageButton add_btn = (ImageButton) findViewById(R.id.btn_add);
-										if (add_btn.getVisibility() == View.VISIBLE) {
-											animation_completed = false;
-											add_btn.requestFocus();
+										animation_completed = false;
+										focus_index++;
+										c_data = city_list.get(focus_index);
+										c_data.button_view.requestFocus();
+
+									} else // move focus on add button
+									{
+										if ((name_list.size() > 200) && (animation_completed == true)) // city.xml
+																										// 还没解析完成不能添加城市
+										{
+											System.out.printf("************right*********************\n");
+											ImageButton add_btn = (ImageButton) findViewById(R.id.btn_add);
+											if (add_btn.getVisibility() == View.VISIBLE) {
+												animation_completed = false;
+												add_btn.requestFocus();
+											}
 										}
 									}
-								}
 
-								return true;
-							case KeyEvent.KEYCODE_DEL:
-								if (city_list.size() == 1)
-									return false;
-								Log.i("Tag",
-										"==================  animation_completed = "
-												+ animation_completed);
-								if (animation_completed == true)
-									weather_delete_focus_city();
-								break;
-							case KeyEvent.KEYCODE_ENTER:
-								for (i = 0; i < city_list.size(); i++) {
-									c_data = city_list.get(i);
-									if (c_data.is_default == true) {
-										c_data.is_default = false;
-										break;
+									return true;
+								case KeyEvent.KEYCODE_DEL:
+									if (city_list.size() == 1)
+										return false;
+									Log.i("Tag", "==================  animation_completed = " + animation_completed);
+									if (animation_completed == true)
+										weather_delete_focus_city();
+									break;
+								case KeyEvent.KEYCODE_ENTER:
+									for (i = 0; i < city_list.size(); i++) {
+										c_data = city_list.get(i);
+										if (c_data.is_default == true) {
+											c_data.is_default = false;
+											break;
+										}
 									}
-								}
 
-								c_data = city_list.get(focus_index);
-								c_data.is_default = true;
-								c_data.is_temporary = false;
-								cityListChanged = true;
+									c_data = city_list.get(focus_index);
+									c_data.is_default = true;
+									c_data.is_temporary = false;
+									cityListChanged = true;
 
-								ImageView flag = (ImageView) findViewById(R.id.flag);
-								flag.setX(105 + focus_index * button_gap);
+									ImageView flag = (ImageView) findViewById(R.id.flag);
+									flag.setX(105 + focus_index * button_gap);
 
-								// 改变默认城市，发广播消息通知
-								Intent intent = new Intent("WEATHER");
-								intent.putExtra("msg", c_data.c_id + ":"
-										+ c_data.c_name);
-								sendBroadcast(intent);
+									// 改变默认城市，发广播消息通知
+									Intent intent = new Intent("WEATHER");
+									intent.putExtra("msg", c_data.c_id + ":" + c_data.c_name);
+									sendBroadcast(intent);
 
-								return true;
+									return true;
 
-							case KeyEvent.KEYCODE_S:
-								stopUpdate = !stopUpdate;
+								case KeyEvent.KEYCODE_S:
+									stopUpdate = !stopUpdate;
 
-							default:
-								break;
+								default:
+									break;
 							}
 						}
 						return false;
@@ -694,36 +676,29 @@ public class MainActivity extends Activity {
 				});
 
 				// city button focus
-				button_view
-						.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-							// @Override
-							public void onFocusChange(View v, boolean hasFocus) {
-								// TODO Auto-generated method stub
-								if (hasFocus) {
-									Log.i("onFocusChange", "button focus in ");
-									ImageView button_pic = (ImageView) button_view
-											.findViewById(R.id.buttonpic);
-									button_pic
-											.setImageResource(R.drawable.btn_blue);
+				button_view.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+					// @Override
+					public void onFocusChange(View v, boolean hasFocus) {
+						// TODO Auto-generated method stub
+						if (hasFocus) {
+							Log.i("onFocusChange", "button focus in ");
+							ImageView button_pic = (ImageView) button_view.findViewById(R.id.buttonpic);
+							button_pic.setImageResource(R.drawable.btn_blue);
 
-									TextView city_name = (TextView) button_view
-											.findViewById(R.id.cityname);
-									city_name.setTextColor(Color.WHITE);
-									weather_move_all_city_board();
-								} else {
-									Log.i("onFocusChange", "button focus out");
-									ImageView button_pic = (ImageView) button_view
-											.findViewById(R.id.buttonpic);
-									button_pic
-											.setImageResource(R.drawable.btn_white);
+							TextView city_name = (TextView) button_view.findViewById(R.id.cityname);
+							city_name.setTextColor(Color.WHITE);
+							weather_move_all_city_board();
+						} else {
+							Log.i("onFocusChange", "button focus out");
+							ImageView button_pic = (ImageView) button_view.findViewById(R.id.buttonpic);
+							button_pic.setImageResource(R.drawable.btn_white);
 
-									TextView city_name = (TextView) button_view
-											.findViewById(R.id.cityname);
-									city_name.setTextColor(Color.BLACK);
-								}
+							TextView city_name = (TextView) button_view.findViewById(R.id.cityname);
+							city_name.setTextColor(Color.BLACK);
+						}
 
-							}
-						});
+					}
+				});
 			}
 
 		}
@@ -762,11 +737,9 @@ public class MainActivity extends Activity {
 
 		if (search == null) {
 			ImageButton add_btn = (ImageButton) findViewById(R.id.btn_add);
-			search = LayoutInflater.from(this.getApplication()).inflate(
-					R.layout.sreach_panel, null);
+			search = LayoutInflater.from(this.getApplication()).inflate(R.layout.sreach_panel, null);
 			weather_main.addView(search);
-			FrameLayout layout_search = (FrameLayout) search
-					.findViewById(R.id.search1);
+			FrameLayout layout_search = (FrameLayout) search.findViewById(R.id.search1);
 
 			layout_search.setY(50 + 38);
 			layout_search.setX(add_btn.getX() - 124);
@@ -782,8 +755,7 @@ public class MainActivity extends Activity {
 			search.setFocusable(true);
 			search.setFocusableInTouchMode(true);
 
-			final AutoCompleteTextView autocomplete = (AutoCompleteTextView) search
-					.findViewById(R.id.autoComplete);
+			final AutoCompleteTextView autocomplete = (AutoCompleteTextView) search.findViewById(R.id.autoComplete);
 
 			autocomplete.setFocusable(true);
 			autocomplete.setFocusableInTouchMode(true);
@@ -794,30 +766,23 @@ public class MainActivity extends Activity {
 				HashMap<String, String> item;
 				for (int i = 0; i < name_list.size(); i++) {
 					item = new HashMap<String, String>();
-					item.put("brandSearchText", name_list.get(i).c_id + "  "
-							+ name_list.get(i).spell);
-					item.put("brandName",
-							name_list.get(i).name.replace(" ", ""));
+					item.put("brandSearchText", name_list.get(i).c_id + "  " + name_list.get(i).spell);
+					item.put("brandName", name_list.get(i).name.replace(" ", ""));
 					hash_list.add(item);
 					// System.out.printf("%s, key:%s \n", item.get("brandName")
 					// +":  ", name_list.get(i).name.replace(" ",
 					// "")+name_list.get(i).name.replace(" ", "").length());
 				}
 			}
-			SimpleAdapter adapter = new SimpleAdapter(this, hash_list,
-					R.layout.search, new String[] { "brandSearchText",
-							"brandName" }, new int[] { R.id.searchText,
-							R.id.brandName });
+			SimpleAdapter adapter = new SimpleAdapter(this, hash_list, R.layout.search, new String[] { "brandSearchText", "brandName" },
+					new int[] { R.id.searchText, R.id.brandName });
 			autocomplete.setAdapter(adapter);
 
-			ObjectAnimator scale_x = ObjectAnimator.ofFloat(search, "scaleX",
-					1.0f);
+			ObjectAnimator scale_x = ObjectAnimator.ofFloat(search, "scaleX", 1.0f);
 			scale_x.setDuration(700);
-			ObjectAnimator scale_y = ObjectAnimator.ofFloat(search, "scaleY",
-					1.0f);
+			ObjectAnimator scale_y = ObjectAnimator.ofFloat(search, "scaleY", 1.0f);
 			scale_y.setDuration(700);
-			ObjectAnimator alpha = ObjectAnimator
-					.ofFloat(search, "alpha", 1.0f);
+			ObjectAnimator alpha = ObjectAnimator.ofFloat(search, "alpha", 1.0f);
 			alpha.setDuration(700);
 
 			AnimatorSet animator_set = new AnimatorSet();
@@ -835,26 +800,22 @@ public class MainActivity extends Activity {
 				}
 			});
 
-			autocomplete
-					.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+			autocomplete.setOnFocusChangeListener(new View.OnFocusChangeListener() {
 
-						public void onFocusChange(View v, boolean hasFocus) {
-							// TODO Auto-generated method stub
-							Log.i("tag", "======================" + hasFocus);
-							if (hasFocus) {
-								InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-								Log.i("tag",
-										"======================"
-												+ imm.isActive());
-								if (!imm.isActive())
-									imm.showSoftInput(autocomplete, 0);
-							} else {
-								InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-								imm.hideSoftInputFromWindow(
-										autocomplete.getWindowToken(), 0);
-							}
-						}
-					});
+				public void onFocusChange(View v, boolean hasFocus) {
+					// TODO Auto-generated method stub
+					Log.i("tag", "======================" + hasFocus);
+					if (hasFocus) {
+						InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+						Log.i("tag", "======================" + imm.isActive());
+						if (!imm.isActive())
+							imm.showSoftInput(autocomplete, 0);
+					} else {
+						InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+						imm.hideSoftInputFromWindow(autocomplete.getWindowToken(), 0);
+					}
+				}
+			});
 
 			autocomplete.setOnKeyListener(new View.OnKeyListener() {
 				// @Override
@@ -863,33 +824,30 @@ public class MainActivity extends Activity {
 					Editable text = null;
 
 					if (event.getAction() == KeyEvent.ACTION_DOWN) {
-						Log.i("TAG",
-								"**********ACTION_DOWN:"
-										+ autocomplete.isInEditMode() + "||"
-										+ autocomplete.isInputMethodTarget()
-										+ "||" + autocomplete.isInTouchMode());
+						Log.i("TAG", "**********ACTION_DOWN:" + autocomplete.isInEditMode() + "||" + autocomplete.isInputMethodTarget()
+								+ "||" + autocomplete.isInTouchMode());
 
 						System.out.println("key value is: " + keyCode);
 						switch (keyCode) {
-						case KeyEvent.KEYCODE_META_RIGHT: // 输入法切换 118
+							case KeyEvent.KEYCODE_META_RIGHT: // 输入法切换 118
 
-							break;
-						case KeyEvent.KEYCODE_DPAD_UP:
+								break;
+							case KeyEvent.KEYCODE_DPAD_UP:
 
-							// 当焦点在文本框上且文本框无内容时，再按向上键，autocompletetextview控件默认将UI焦点转移至其他控件，在此屏蔽按键向上转移
-							if (autocomplete.getListSelection() == -1)
-								return true;
+								// 当焦点在文本框上且文本框无内容时，再按向上键，autocompletetextview控件默认将UI焦点转移至其他控件，在此屏蔽按键向上转移
+								if (autocomplete.getListSelection() == -1)
+									return true;
 
-							break;
+								break;
 
-						case KeyEvent.KEYCODE_ESCAPE:
-							// 当焦点处于文本框时esc退出，防止只有输入法退出，无法再次调出输入法
-							// if (autocomplete.getListSelection() == -1)
-							weahter_search_dialog_focusout_anmi();
-							break;
+							case KeyEvent.KEYCODE_ESCAPE:
+								// 当焦点处于文本框时esc退出，防止只有输入法退出，无法再次调出输入法
+								// if (autocomplete.getListSelection() == -1)
+								weahter_search_dialog_focusout_anmi();
+								break;
 
-						default:
-							break;
+							default:
+								break;
 						}
 					}
 
@@ -900,15 +858,12 @@ public class MainActivity extends Activity {
 
 			autocomplete.setOnItemClickListener(new OnItemClickListener() {
 				// @Override
-				public void onItemClick(AdapterView<?> arg0, View arg1,
-						int arg2, long arg3) {
+				public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
 					TextView tv = (TextView) arg1.findViewById(R.id.brandName);
 					autocomplete.setText(tv.getText().toString());
-					autocomplete.setSelection((autocomplete.getText()
-							.toString()).length());
+					autocomplete.setSelection((autocomplete.getText().toString()).length());
 
-					TextView text = (TextView) arg1
-							.findViewById(R.id.searchText);
+					TextView text = (TextView) arg1.findViewById(R.id.searchText);
 					String a[] = ((String) text.getText()).split(" ");
 
 					// 添加城市到city_list
@@ -942,9 +897,7 @@ public class MainActivity extends Activity {
 		// finish();
 		if (search != null)
 			weahter_search_dialog_focusout_anmi();
-		else if (animation_completed == true
-				&& weather_btn_anim_set.isRunning() == false
-				&& weather_main.isAnimating() == false) {
+		else if (animation_completed == true && weather_btn_anim_set.isRunning() == false && weather_main.isAnimating() == false) {
 			actions_at_exit();
 		}
 		// else
@@ -1037,14 +990,12 @@ public class MainActivity extends Activity {
 			c_data = city_list.get(i);
 			Log.i("city_button drop", c_data.c_name);
 
-			RelativeLayout button = (RelativeLayout) c_data.button_view
-					.findViewById(R.id.city_button);
+			RelativeLayout button = (RelativeLayout) c_data.button_view.findViewById(R.id.city_button);
 			button_an[i] = ObjectAnimator.ofFloat(button, "Y", button_start_y);
 			button_an[i].setDuration(200);
 
 			if (i > 0)
-				weather_btn_anim_set.play(button_an[i - 1])
-						.before(button_an[i]);
+				weather_btn_anim_set.play(button_an[i - 1]).before(button_an[i]);
 		}
 
 		Log.i("button_animation", "try");
@@ -1098,8 +1049,7 @@ public class MainActivity extends Activity {
 		animation_completed = false;
 		for (i = 0; i < city_list.size(); i++) {
 			c_data = city_list.get(i);
-			System.out.println("*********board_animation:" + i + "focus_index:"
-					+ focus_index + "************");
+			System.out.println("*********board_animation:" + i + "focus_index:" + focus_index + "************");
 			weather_city_board_animation(c_data, i);
 
 		}
@@ -1111,10 +1061,8 @@ public class MainActivity extends Activity {
 		// WeatherDetail w_detail = null;
 		pos_x = board_start_x + (board_index - focus_index) * 1280;
 
-		FrameLayout city_board = (FrameLayout) c_data.board_view
-				.findViewById(R.id.cityboard);
-		FrameLayout weatherIconFrameLayout = (FrameLayout) city_board
-				.findViewById(R.id.weathericon);
+		FrameLayout city_board = (FrameLayout) c_data.board_view.findViewById(R.id.cityboard);
+		FrameLayout weatherIconFrameLayout = (FrameLayout) city_board.findViewById(R.id.weathericon);
 		if (weatherIconFrameLayout.getChildCount() != 0)
 			weatherIconFrameLayout.removeAllViews();
 
@@ -1141,13 +1089,9 @@ public class MainActivity extends Activity {
 					if (stopUpdate == true) {
 						float alpha = (float) 0.5;
 						weather_icon.setAlpha(alpha);
-						FrameLayout weatherIconFrameLayout = (FrameLayout) updateCD.board_view
-								.findViewById(R.id.weathericon);
-						weatherIconFrameLayout.addView(weather_icon,
-								weatherIconFrameLayout.getWidth(),
-								weatherIconFrameLayout.getHeight());
-						weather_icon
-								.setBackgroundResource(R.drawable.widget_bkgrd);
+						FrameLayout weatherIconFrameLayout = (FrameLayout) updateCD.board_view.findViewById(R.id.weathericon);
+						weatherIconFrameLayout.addView(weather_icon, weatherIconFrameLayout.getWidth(), weatherIconFrameLayout.getHeight());
+						weather_icon.setBackgroundResource(R.drawable.widget_bkgrd);
 						animation_completed = true;
 						return;
 					}
@@ -1170,8 +1114,7 @@ public class MainActivity extends Activity {
 
 	void weather_exit_animation() {
 		CityData c_data = city_list.get(focus_index);
-		FrameLayout city_board = (FrameLayout) c_data.board_view
-				.findViewById(R.id.cityboard);
+		FrameLayout city_board = (FrameLayout) c_data.board_view.findViewById(R.id.cityboard);
 		float pos_x = 0, pos_y = 0;
 		pos_x = board_start_x + 1280;
 		pos_y = -108;
@@ -1180,8 +1123,7 @@ public class MainActivity extends Activity {
 
 		ObjectAnimator an = ObjectAnimator.ofFloat(city_board, "X", pos_x);
 		an.setDuration(600);
-		ObjectAnimator dropAn = ObjectAnimator
-				.ofFloat(cities_panel, "Y", pos_y);
+		ObjectAnimator dropAn = ObjectAnimator.ofFloat(cities_panel, "Y", pos_y);
 		// an.setDuration(2000);
 
 		animator_set.play(dropAn).with(an);
@@ -1189,7 +1131,13 @@ public class MainActivity extends Activity {
 			// @Override
 			public void onAnimationEnd(Animator animation) {
 				// TODO Auto-generated method stub
-				weather_main.startTransition(true);
+
+				if (openAnimation == true)
+					weather_main.startTransition(true);
+				else {
+					onDestroy();
+					android.os.Process.killProcess(android.os.Process.myPid());
+				}
 			}
 
 			public void onAnimationCancel(Animator animation) {
@@ -1221,14 +1169,11 @@ public class MainActivity extends Activity {
 
 			del_data.board_view.setPivotX(0.0f);
 			del_data.board_view.setPivotY(478.0f);
-			ObjectAnimator scale_x = ObjectAnimator.ofFloat(
-					del_data.board_view, "scaleX", 0.0f);
+			ObjectAnimator scale_x = ObjectAnimator.ofFloat(del_data.board_view, "scaleX", 0.0f);
 			scale_x.setDuration(700);
-			ObjectAnimator scale_y = ObjectAnimator.ofFloat(
-					del_data.board_view, "scaleY", 0.0f);
+			ObjectAnimator scale_y = ObjectAnimator.ofFloat(del_data.board_view, "scaleY", 0.0f);
 			scale_y.setDuration(700);
-			ObjectAnimator alpha = ObjectAnimator.ofFloat(del_data.board_view,
-					"alpha", 0.0f);
+			ObjectAnimator alpha = ObjectAnimator.ofFloat(del_data.board_view, "alpha", 0.0f);
 			alpha.setDuration(700);
 
 			if (city_list.size() == 5) {
@@ -1255,11 +1200,8 @@ public class MainActivity extends Activity {
 					// TODO Auto-generated method stub
 					// CityData c_data =null;
 					// if(focus_index + 1 == )
-					Log.i("Tag",
-							"*******del_ani_end*********  animation_completed  = "
-									+ animation_completed);
-					FrameLayout weatherIconFrameLayout = (FrameLayout) del_data.board_view
-							.findViewById(R.id.weathericon);
+					Log.i("Tag", "*******del_ani_end*********  animation_completed  = " + animation_completed);
+					FrameLayout weatherIconFrameLayout = (FrameLayout) del_data.board_view.findViewById(R.id.weathericon);
 					weatherIconFrameLayout.removeAllViews();
 					del_data.board_view.setVisibility(View.INVISIBLE);
 					weather_main.removeView(del_data.board_view);
@@ -1273,9 +1215,7 @@ public class MainActivity extends Activity {
 
 					animation_completed = true;
 					for (int i = 0; i < city_list.size(); i++) {
-						System.out.printf("城市：%s， %s, %d\n",
-								city_list.get(i).c_name, city_list.get(i).c_id,
-								i);
+						System.out.printf("城市：%s， %s, %d\n", city_list.get(i).c_name, city_list.get(i).c_id, i);
 					}
 				}
 
@@ -1317,8 +1257,7 @@ public class MainActivity extends Activity {
 				}
 
 				c_data = city_list.get(focus_index + 1);
-				Log.i("tag", "------------------------------"
-						+ c_data.button_view);
+				Log.i("tag", "------------------------------" + c_data.button_view);
 			}
 			// c_data.button_view.requestFocus();
 
@@ -1349,8 +1288,7 @@ public class MainActivity extends Activity {
 		public void run() {
 			// TODO Auto-generated method stub
 			if (updateCD != null)
-				weather_data.weather_update_animationdrawable_bitmap(updateCD,
-						weather_icon);
+				weather_data.weather_update_animationdrawable_bitmap(updateCD, weather_icon);
 
 			animation_completed = true;
 		}
@@ -1367,8 +1305,7 @@ public class MainActivity extends Activity {
 	public class receiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			if (intent.getAction().equals(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-					&& search != null)
+			if (intent.getAction().equals(Intent.ACTION_CLOSE_SYSTEM_DIALOGS) && search != null)
 				weahter_search_dialog_focusout_anmi();
 			if (intent.getAction().equals("tellweatherwidget")) {
 				if (search != null)
@@ -1386,8 +1323,7 @@ public class MainActivity extends Activity {
 								String spaceString = "  ";
 								StringBuffer tmp = new StringBuffer();
 								for (int i = 0; i < newCity.length() - 1; i++) {
-									tmp.append(newCity.charAt(i)).append(
-											spaceString);
+									tmp.append(newCity.charAt(i)).append(spaceString);
 								}
 								tmp.append(newCity.charAt(newCity.length() - 1));
 								newCity = tmp.toString();
@@ -1396,19 +1332,15 @@ public class MainActivity extends Activity {
 						}
 
 					/* 如果查询了新的城市，而程序中已存在的城市超过5个，那么去掉以前的可能存在的临时城市 */
-					if ((newCity != null) && !weather_city_exist(newCity)
-							&& city_list != null) {
+					if ((newCity != null) && !weather_city_exist(newCity) && city_list != null) {
 						if (city_list.size() >= 5)
 							for (int i = 0; i < city_list.size(); i++) {
 								c_data = city_list.get(i);
 								if (c_data.is_temporary == true) {
-									FrameLayout weatherIconFrameLayout = (FrameLayout) c_data.board_view
-											.findViewById(R.id.weathericon);
+									FrameLayout weatherIconFrameLayout = (FrameLayout) c_data.board_view.findViewById(R.id.weathericon);
 									weatherIconFrameLayout.removeAllViews();
-									c_data.board_view
-											.setVisibility(View.INVISIBLE);
-									c_data.button_view
-											.setVisibility(View.INVISIBLE);
+									c_data.board_view.setVisibility(View.INVISIBLE);
+									c_data.button_view.setVisibility(View.INVISIBLE);
 									weather_main.removeView(c_data.board_view);
 									c_data.board_view = null;
 									c_data.button_view = null;
@@ -1432,9 +1364,7 @@ public class MainActivity extends Activity {
 							}
 						}
 						if (c_data == null) {
-							Toast toast = Toast.makeText(
-									getApplicationContext(), "找不到该城市",
-									Toast.LENGTH_LONG);
+							Toast toast = Toast.makeText(getApplicationContext(), "找不到该城市", Toast.LENGTH_LONG);
 							toast.setGravity(Gravity.CENTER, 0, 0);
 							toast.show();
 							Log.i("tag", "handler : toast!!!!!!!!!!");
@@ -1455,8 +1385,7 @@ public class MainActivity extends Activity {
 					}
 
 					else /* 否则，如果查询的城市在已有的城市当中的话，转移焦点 */
-					if ((newCity != null) && weather_city_exist(newCity)
-							&& city_list != null) {
+					if ((newCity != null) && weather_city_exist(newCity) && city_list != null) {
 						for (int i = 0; i < city_list.size(); i++) {
 							c_data = city_list.get(i);
 							if (c_data.c_name.equals(newCity)) {
@@ -1514,8 +1443,7 @@ class ParseThread implements Runnable {
 
 			for (int i = 0; i < c_list.size(); i++) {
 				CityData c_data = c_list.get(i);
-				String pic_path = pre_path + "/rc/pics/weather/city/"
-						+ c_data.c_id + ".jpg";
+				String pic_path = pre_path + "/rc/pics/weather/city/" + c_data.c_id + ".jpg";
 				File picFile = new File(pic_path);
 				if (!picFile.exists()) {
 					weather_data.weather_get_city_image(c_data, n_list);
@@ -1563,8 +1491,7 @@ class ParseThread implements Runnable {
 		}
 	}
 
-	public ParseThread(ArrayList<CityInfo> name_list, List<CityData> city_list,
-			WeatherDataPro w_data, Handler handler) {
+	public ParseThread(ArrayList<CityInfo> name_list, List<CityData> city_list, WeatherDataPro w_data, Handler handler) {
 		n_list = name_list;
 		c_list = city_list;
 		weather_data = w_data;

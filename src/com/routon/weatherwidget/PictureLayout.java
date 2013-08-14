@@ -16,10 +16,11 @@
 
 package com.routon.weatherwidget;
 
+import java.util.Calendar;
+
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -30,24 +31,14 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewParent;
-import android.view.animation.Animation;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
-import java.util.Calendar;
-
-@SuppressLint({
+/*@SuppressLint({
         "NewApi", "NewApi"
-})
+})*/
 public class PictureLayout extends FrameLayout {
     private static boolean FPS_DEBUG = false;
     private static boolean DEBUG = false;

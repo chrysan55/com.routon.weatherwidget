@@ -2,27 +2,31 @@
     android:id="@+id/weathermain"
     android:layout_width="1280dp"
     android:layout_height="720dp" >
-    
-     <ImageView
-         android:id="@+id/backpic"
-         android:layout_width="1280dp"
-         android:layout_height="720dp"
-         android:scaleType="fitXY" />
-     
+
+    <ImageView
+        android:id="@+id/backpic"
+        android:layout_width="1280dp"
+        android:layout_height="720dp"
+        android:scaleType="fitXY" />
+
     <FrameLayout
         android:id="@+id/cities_panel"
         android:layout_width="fill_parent"
-        android:layout_height="108dp"
-        android:layout_marginTop="0dp" 
-        >
-        
-         <ImageView
-             android:id="@+id/panelpic"
-              android:src="@drawable/widget_panel"
-             android:layout_width="fill_parent"
-             android:layout_height="fill_parent" 
-             android:visibility="invisible" />     
-         
+        android:layout_height="78dp"
+        android:layout_marginTop="0dp" >
+
+        <ImageView
+            android:id="@+id/panelpic"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:focusable="true"
+            android:src="@drawable/widget_panel"
+            android:visibility="invisible"
+            android:adjustViewBounds="false"
+            android:maxWidth="1280dp"
+            android:maxHeight="78dp" />
+
+        <!--
           <ImageView
              android:id="@+id/flag"
              android:layout_width="29dp"
@@ -36,11 +40,39 @@
              android:layout_width="43dp"
              android:layout_height="41dp"
              android:visibility="invisible"/>
+        -->
 
-        
-	
-	</FrameLayout>
-	  
-     
+    </FrameLayout>
     
+    <LinearLayout
+            android:id="@+id/panelHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="950dp"
+            android:orientation="horizontal"
+            android:visibility="invisible" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="按 "
+                android:textColor="@color/primary_text_light"
+                android:textSize="28sp" />
+
+            <com.routon.widgets.TurnAniView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/menu" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text=" 选择默认城市"
+                android:textColor="@color/primary_text_light"
+                android:textSize="28sp" />
+        </LinearLayout>
+
 </com.routon.weatherwidget.PictureLayout>
